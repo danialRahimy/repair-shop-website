@@ -1,0 +1,52 @@
+version: '3.8'
+
+networks:
+  repair_shop_website:
+    name: repair_shop_website
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: repair_shop_website_web
+    networks:
+      - repair_shop_website
+    volumes:
+      - ../:/var/www/html/
+      - ./volumes/ssl/myCert.crt:/etc/ssl/certs/myCert.crt
+      - ./volumes/ssl/myCert.key:/etc/ssl/private/myCert.key
+      - ./volumes/crontabFiles/crontab:/etc/crontab
+    ports:
+      - "127.0.0.1:9601:80"
+      - "127.0.0.1:9602:443"
+  db_mysql:
+      image: mysql:8.0.32
+      container_name: repair_shop_website_db_mysql
+      networks:
+          - repair_shop_website
+      restart: always
+      environment:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: repair_shop_website
+          MYSQL_USER: repair_shop_website
+          MYSQL_PASSWORD: password
+      volumes:
+          - ./volumes/mysql:/var/lib/mysql/
+#    ports:
+#      - "3306"
+  phpmyadmin:
+      image: phpmyadmin/phpmyadmin:latest
+      container_name: repair_shop_website_phpmyadmin
+      networks:
+          - repair_shop_website
+      links:
+          - db_mysql
+      depends_on:
+          - db_mysql
+      environment:
+          PMA_HOST: db_mysql
+          PMA_PORT: 3306
+      restart: always
+      ports:
+          - "127.0.0.1:9603:80"
